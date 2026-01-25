@@ -1,0 +1,95 @@
+import numpy as np
+import re
+from .utils import check_singleton, unique_optimization
+
+def _clean_text_single(text, whitelist_specials=""):
+    if not text:
+        return ""
+    escaped_whitelist = re.escape(whitelist_specials)
+    pattern = f"[^a-zA-Z0-9\\s{escaped_whitelist}]"
+    return re.sub(pattern, "", text)
+
+def _clean_space_single(text):
+    if not text:
+        return ""
+    return re.sub(r"\s+", " ", text).strip()
+
+def _strip_non_english_single(text):
+    if not text:
+        return ""
+    return re.sub(r"[^\x20-\x7E]", "", text)
+
+def _convert_case_single(text, case):
+    if case == 'lower':
+        return text.lower()
+    elif case == 'upper':
+        return text.upper()
+    elif case == 'title':
+        return text.title()
+    elif case == 'start':
+        return string_start_case(text)
+    elif case == 'initcap':
+        return text.capitalize()
+    return text
+
+def string_start_case(text):
+    return ' '.join(word.capitalize() for word in text.split())
+
+@unique_optimization
+def nstring(x, case=None, remove_specials=False, whitelist_specials='', en_only=False):
+    """
+    Neat representation of string.
+    
+    Parameters
+    ----------
+    x : array-like
+        Input strings.
+    case : {'lower', 'upper', 'title', 'start', 'initcap'}, optional
+        Case conversion.
+    remove_specials : bool, default False
+        Remove special characters.
+    whitelist_specials : str, optional
+        Characters to keep when remove_specials is True.
+    en_only : bool, default False
+        Keep only English (ASCII) characters.
+    
+    Returns
+    -------
+    numpy.ndarray
+        Formatted strings.
+    """
+    check_singleton(remove_specials, 'remove_specials', bool)
+    check_singleton(en_only, 'en_only', bool)
+    
+    result = []
+    
+    clean_text_pattern = None
+    if remove_specials:
+        escaped_whitelist = re.escape(whitelist_specials)
+        clean_text_pattern = re.compile(f"[^a-zA-Z0-9\\s{escaped_whitelist}]")
+        
+    non_english_pattern = None
+    if en_only:
+        non_english_pattern = re.compile(r"[^\x20-\x7E]")
+        
+    space_pattern = re.compile(r"\s+")
+
+    for s in x:
+        s = str(s)
+        
+        if case:
+            s = _convert_case_single(s, case)
+            
+        if remove_specials:
+            if clean_text_pattern:
+                s = clean_text_pattern.sub("", s)
+        
+        if en_only:
+            if non_english_pattern:
+                s = non_english_pattern.sub("", s)
+                
+        s = space_pattern.sub(" ", s).strip()
+        
+        result.append(s)
+        
+    return np.array(result, dtype=object)

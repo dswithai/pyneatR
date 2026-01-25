@@ -1,0 +1,194 @@
+# pyneatR
+
+Neat formatting for numbers, dates, timestamps, and strings using numpy.
+Implementation inspired by the R package [`neatR`](https://cran.r-project.org/web/packages/neatR/vignettes/neat-data.html).
+
+## Installation
+
+```bash
+pip install pyneatR
+```
+
+## Neat Data for Presentation
+
+### Formatting dates
+
+Often, we encounter dates in various formats and want an unambiguous representation. `ndate` formats dates into a readable `mmm dd, yyyy` format with the day of the week.
+
+```python
+from pyneatR import ndate, nday
+from datetime import date, timedelta
+
+today = date.today()
+# Assuming today is Nov 09, 2025 (Sun) for these examples
+
+print(ndate(today - timedelta(days=3)))
+# "Nov 06, 2025 (Thu)"
+
+print(ndate(today))
+# "Nov 09, 2025 (Sun)"
+
+print(ndate(today + timedelta(days=4)))
+# "Nov 13, 2025 (Thu)"
+```
+
+To just get the date without the day of week, set `display_weekday=False`:
+
+```python
+print(ndate(today, display_weekday=False))
+# "Nov 09, 2025"
+```
+
+For monthly data, abbreviating the date to `mmm'yy` is elegant:
+
+```python
+print(ndate(today, display_weekday=False, is_month=True))
+# "Nov'25"
+```
+
+To see the context of the date with respect to current date (within 1 week), use `nday`.
+
+```python
+print(nday(today, reference_alias=False))
+# "Sun"
+
+print(nday(today, reference_alias=True))
+# "Today, Sun"
+```
+
+### Formatting timestamp
+
+Timestamps are feature-rich representations of date and time.
+
+```python
+from pyneatR import ntimestamp
+from datetime import datetime
+
+now = datetime.now()
+# Assuming now is Nov 09, 2025 12:07:48 PM
+
+print(ntimestamp(now))
+# "Nov 09, 2025 12H 07M 48S PM (Sun)"
+```
+
+To extract and format only the time:
+
+```python
+print(ntimestamp(now, display_weekday=False, include_date=False, include_timezone=False))
+# "12H 07M 48S PM"
+```
+
+Components of time can be toggled on or off:
+
+```python
+print(ntimestamp(now, include_date=False, display_weekday=False, 
+                 include_hours=True, include_minutes=True, include_seconds=False, 
+                 include_timezone=False))
+# "12H 07M PM"
+```
+
+### Formatting number
+
+`nnumber` formats numeric data in a readable way, automatically handling large numbers.
+
+```python
+from pyneatR import nnumber
+import numpy as np
+
+x = np.array([10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000])
+
+print(nnumber(x))
+# ['10.0' '100.0' '1.0 K' '10.0 K' '100.0 K' '1.0 Mn' '10.0 Mn' '100.0 Mn' '1.0 Bn']
+
+print(nnumber(x, digits=0))
+# ['10' '100' '1 K' '10 K' '100 K' '1 Mn' '10 Mn' '100 Mn' '1 Bn']
+```
+
+`nnumber` can automatically determine the best single unit for all numbers using `unit='auto'`:
+
+```python
+x = np.array([1e6, 99e3, 76e3, 42e3, 12e3, 789, 53])
+print(nnumber(x, unit='auto'))
+# ['1,000 K' '99 K' '76 K' '42 K' '12 K' '0.8 K' '0.1 K']
+```
+
+You can specify the unit directly:
+
+```python
+print(nnumber(123456789.123456, unit='Mn'))
+# "123.5 Mn"
+```
+
+Default units are 'K', 'Mn', 'Bn', 'Tn'. Custom labels can be provided:
+
+```python
+print(nnumber(123456789.123456, unit='M', unit_labels={'million': 'M'}))
+# "123.5 M"
+```
+
+Prefixes and suffixes can be added:
+
+```python
+print(nnumber(123456789.123456, unit='Mn', prefix='$ '))
+# "$ 123.5 Mn"
+```
+
+To show the raw number with separators:
+
+```python
+print(nnumber(123456789.123456, digits=2, unit='', thousand_separator=','))
+# "123,456,789.12"
+```
+
+### Formatting percentages
+
+`npercent` formats percentages, handling both decimals (0.228) and values already multiplied by 100 (22.8).
+
+```python
+from pyneatR import npercent
+
+print(npercent(22.8, is_decimal=False))
+# "+22.8%"
+
+print(npercent(0.228, is_decimal=True))
+# "+22.8%"
+```
+
+By default `is_decimal=True`. The plus sign can be toggled:
+
+```python
+print(npercent(0.228, plus_sign=False))
+# "22.8%"
+```
+
+For growth factors:
+
+```python
+tesla_2017 = 20
+tesla_2023 = 200
+g = (tesla_2023 - tesla_2017) / tesla_2017
+
+print(npercent(g, plus_sign=True))
+# "+900.0%"
+
+# factor_out=True is not yet implemented in this version, but check documentation for updates.
+```
+
+### Formatting string
+
+`nstring` formats character vectors, removing special characters or changing case.
+
+```python
+from pyneatR import nstring
+
+s = ' All MOdels are wrong. some ARE useful!!! '
+print(nstring(s, case='title', remove_specials=True))
+# "All Models Are Wrong Some Are Useful"
+```
+
+To retain only English alphabets and numbers:
+
+```python
+print(nstring(s, case='title', remove_specials=True, en_only=True))
+# "All Models Are Wrong Some Are Useful"
+```

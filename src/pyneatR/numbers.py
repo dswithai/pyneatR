@@ -1,0 +1,431 @@
+import numpy as np
+import warnings
+from .utils import check_singleton, sandwich, unique_optimization
+from typing import Union, Any, Optional, Dict
+
+def _nround(x: float, digits: int = 1) -> str:
+    """
+    Round number and return string with fixed decimals.
+    """
+    return f"{x:.{digits}f}"
+
+def _chunk_digits(x, thousand_separator: str = ","):
+    """
+    Add separator to number string. 
+    x is expected to be a number.
+    Returns string.
+    """
+    pass 
+
+def _format_single_number(n: float, digits: int, unit_label: str, thousand_separator: str) -> str:
+    s = f"{n:.{digits}f}"
+    
+    if thousand_separator:
+        parts = s.split('.')
+        integer_part = parts[0]
+        integer_part = f"{int(integer_part):,}"
+        
+        if thousand_separator != ',':
+            integer_part = integer_part.replace(',', thousand_separator)
+            
+        s = integer_part
+        if len(parts) > 1:
+             decimal_mark = "," if thousand_separator == "." else "."
+             s += decimal_mark + parts[1]
+             
+    if s == "0" or s == "0.0" or (s.replace('.','').replace(',','').replace('0','') == ''):
+        pass
+        
+    return s
+
+@unique_optimization
+def nnumber(number: Union[np.ndarray, list, float, int], digits: int = 1, unit: str = 'custom', 
+            unit_labels: Dict[str, str] = {'thousand': 'K', 'million': 'Mn', 'billion': 'Bn', 'trillion': 'Tn'},
+            prefix: str = '', suffix: str = '', thousand_separator: str = ',') -> Union[np.ndarray, str]:
+    """
+    Neat representation of numbers with optional units (K, Mn, Bn) and formatting.
+
+    Parameters
+    ----------
+    number : array-like
+        Input numbers.
+    digits : int, default 1
+        Number of decimal digits to display.
+    unit : str, default 'custom'
+         'auto': Automatically determine best unit for all numbers.
+         'custom': Determine best unit for each number individually.
+         'K', 'Mn', 'Bn', 'Tn': Fix unit to Thousand, Million, Billion, Trillion.
+         '': No unit.
+    unit_labels : dict, optional
+        Labels for units (thousand, million, billion, trillion).
+    prefix : str, default ''
+        Prefix string (e.g. '$').
+    suffix : str, default ''
+        Suffix string (e.g. ' USD').
+    thousand_separator : str, default ','
+        Character for thousand separation.
+
+    Returns
+    -------
+    numpy.ndarray or str
+        Formatted number strings.
+    """
+    check_singleton(digits, 'digits', int)
+    check_singleton(unit, 'unit', str)
+    check_singleton(prefix, 'prefix', str)
+    check_singleton(suffix, 'suffix', str)
+    
+    labels = ['', 
+              unit_labels.get('thousand', 'K'),
+              unit_labels.get('million', 'Mn'),
+              unit_labels.get('billion', 'Bn'),
+              unit_labels.get('trillion', 'Tn')]
+    factors = [1, 1e-3, 1e-6, 1e-9, 1e-12]
+    
+    result = []
+    
+    final_unit_idx = 0
+    fixed_unit = False
+    
+    x_arr = np.asanyarray(number, dtype=float)
+    original_shape = x_arr.shape
+    x_flat = x_arr.ravel()
+    
+    if unit == 'auto':
+        with np.errstate(divide='ignore', invalid='ignore'):
+            nonzero = (x_flat != 0) & np.isfinite(x_flat)
+            if not np.any(nonzero):
+                mode_mx = 0
+            else:
+                logs = np.log10(np.abs(x_flat[nonzero]))
+                mx = np.floor(logs / 3).astype(int)
+                limit = len(labels) - 1
+                mx = np.clip(mx, 0, limit)
+                counts = np.bincount(mx)
+                mode_mx = np.argmax(counts)
+        
+        final_unit_idx = mode_mx
+        fixed_unit = True
+        
+    elif unit == 'custom':
+        fixed_unit = False
+        
+    elif unit in labels:
+        final_unit_idx = labels.index(unit)
+        fixed_unit = True
+    else:
+         raise ValueError("Invalid unit")
+
+    uvals, inverse = np.unique(x_flat, return_inverse=True)
+    
+    if fixed_unit:
+        indices = np.full(len(uvals), final_unit_idx, dtype=int)
+    else:
+        with np.errstate(divide='ignore', invalid='ignore'):
+             nonzero = (uvals != 0) & np.isfinite(uvals)
+             indices = np.zeros(len(uvals), dtype=int)
+             if np.any(nonzero):
+                 logs = np.log10(np.abs(uvals[nonzero]))
+                 vals = np.floor(logs / 3).astype(int)
+                 limit = len(labels) - 1
+                 indices[nonzero] = np.clip(vals, 0, limit)
+    
+    factors_arr = np.array(factors)
+    labels_arr = np.array(labels)
+    
+    scales = factors_arr[indices]
+    unit_lbls = labels_arr[indices]
+    
+    scaled_vals = uvals * scales
+    
+    fmt_str = f"{{:,.{digits}f}}"
+    formatted_list = [fmt_str.format(v) for v in scaled_vals]
+    formatted_arr = np.array(formatted_list)
+    
+    if thousand_separator != ',':
+        if thousand_separator == '.':
+            formatted_arr = np.char.replace(formatted_arr, ',', 'X')
+            formatted_arr = np.char.replace(formatted_arr, '.', ',')
+            formatted_arr = np.char.replace(formatted_arr, 'X', '.')
+        else:
+            formatted_arr = np.char.replace(formatted_arr, ',', thousand_separator)
+
+    has_unit = unit_lbls != ""
+    if np.any(has_unit):
+        suffixes = np.where(has_unit, np.char.add(" ", unit_lbls), "")
+        formatted_arr = np.char.add(formatted_arr, suffixes)
+    
+    formatted_uvals = formatted_arr
+
+    if prefix or suffix:
+        formatted_uvals = sandwich(formatted_uvals, prefix, suffix)
+        
+    return formatted_uvals[inverse].reshape(original_shape)
+
+
+@unique_optimization
+def npercent(percent: Union[np.ndarray, list, float, int], is_decimal: bool = True, digits: int = 1, 
+             plus_sign: bool = True, factor_out: bool = False, basis_points_out: bool = False) -> Union[np.ndarray, str]:
+    """
+    Format numbers as percentages.
+
+    Parameters
+    ----------
+    percent : array-like
+        Input numbers.
+    is_decimal : bool, default True
+        If True, input is treated as decimal (0.1 -> 10%).
+        If False, input is treated as whole percentage (10 -> 10%).
+    digits : int, default 1
+        Number of decimal digits to display.
+    plus_sign : bool, default True
+        If True, prepend '+' to positive values.
+    factor_out : bool, default False
+        If True, add growth factor (e.g. 2x Growth).
+    basis_points_out : bool, default False
+        If True, add basis points label (e.g. 100 bps).
+
+    Returns
+    -------
+    numpy.ndarray or str
+        Formatted percentage strings.
+    """
+    check_singleton(is_decimal, 'is_decimal', bool)
+    check_singleton(plus_sign, 'plus_sign', bool)
+    
+    x = np.asanyarray(percent, dtype=float)
+    if is_decimal:
+        x = x * 100
+        
+    fmt_str = f"{{:.{digits}f}}"
+    s_list = [fmt_str.format(v) for v in x]
+    s_arr = np.array(s_list, dtype=object)
+    
+    if plus_sign:
+        mask_pos = x > 0
+        s_arr[mask_pos] = np.char.add("+", s_arr[mask_pos])
+        
+    s_arr = np.char.add(s_arr, "%")
+    
+    if factor_out or basis_points_out:
+        extras_arr = np.array([""] * len(x), dtype=object)
+        
+        if factor_out:
+            gtemp = x / 100.0
+            gtemp_abs = np.abs(gtemp)
+            
+            g_fmt = [f"{v:.1f}" for v in gtemp_abs]
+            g_fmt_arr = np.array(g_fmt)
+            
+            growth_lbl = np.char.add(" (", np.char.add(g_fmt_arr, "x Growth)"))
+            drop_lbl = np.char.add(" (", np.char.add(g_fmt_arr, "x Drop)"))
+            
+            small_lbl = np.where(gtemp > 0, " (Growth)", " (Drop)")
+            small_lbl = np.where(gtemp == 0, " (Flat)", small_lbl)
+            
+            f_lbl = np.where(gtemp <= -1, drop_lbl, small_lbl)
+            f_lbl = np.where(gtemp >= 1, growth_lbl, f_lbl)
+            
+            extras_arr = np.char.add(extras_arr, f_lbl)
+            
+        if basis_points_out:
+            bps = x * 100.0
+            
+            bps_list = [f"{b:+.0f}" for b in bps]
+            bps_arr = np.array(bps_list)
+            bps_lbl = np.char.add(" (", np.char.add(bps_arr, " bps)"))
+            
+            extras_arr = np.char.add(extras_arr, bps_lbl)
+            
+        s_arr = np.char.add(s_arr, extras_arr)
+        
+    return s_arr
+    """
+    Round number and return string with fixed decimals.
+    """
+    return f"{x:.{digits}f}"
+
+def _chunk_digits(x, thousand_separator=","):
+    """
+    Add separator to number string. 
+    x is expected to be a number.
+    Returns string.
+    """
+    pass 
+
+def _format_single_number(n, digits, unit_label, thousand_separator):
+    s = f"{n:.{digits}f}"
+    
+    if thousand_separator:
+        parts = s.split('.')
+        integer_part = parts[0]
+        integer_part = f"{int(integer_part):,}"
+        
+        if thousand_separator != ',':
+            integer_part = integer_part.replace(',', thousand_separator)
+            
+        s = integer_part
+        if len(parts) > 1:
+             decimal_mark = "," if thousand_separator == "." else "."
+             s += decimal_mark + parts[1]
+             
+    if s == "0" or s == "0.0" or (s.replace('.','').replace(',','').replace('0','') == ''):
+        pass
+        
+    return s
+
+@unique_optimization
+def nnumber(number, digits=1, unit='custom', 
+            unit_labels={'thousand': 'K', 'million': 'Mn', 'billion': 'Bn', 'trillion': 'Tn'},
+            prefix='', suffix='', thousand_separator=','):
+    """
+    Neat representation of numbers.
+    """
+    check_singleton(digits, 'digits', int)
+    check_singleton(unit, 'unit', str)
+    check_singleton(prefix, 'prefix', str)
+    check_singleton(suffix, 'suffix', str)
+    
+    labels = ['', 
+              unit_labels.get('thousand', 'K'),
+              unit_labels.get('million', 'Mn'),
+              unit_labels.get('billion', 'Bn'),
+              unit_labels.get('trillion', 'Tn')]
+    factors = [1, 1e-3, 1e-6, 1e-9, 1e-12]
+    
+    result = []
+    
+    final_unit_idx = 0
+    fixed_unit = False
+    
+    x_arr = np.asanyarray(number, dtype=float)
+    original_shape = x_arr.shape
+    x_flat = x_arr.ravel()
+    
+    if unit == 'auto':
+        with np.errstate(divide='ignore', invalid='ignore'):
+            nonzero = (x_flat != 0) & np.isfinite(x_flat)
+            if not np.any(nonzero):
+                mode_mx = 0
+            else:
+                logs = np.log10(np.abs(x_flat[nonzero]))
+                mx = np.floor(logs / 3).astype(int)
+                limit = len(labels) - 1
+                mx = np.clip(mx, 0, limit)
+                counts = np.bincount(mx)
+                mode_mx = np.argmax(counts)
+        
+        final_unit_idx = mode_mx
+        fixed_unit = True
+        
+    elif unit == 'custom':
+        fixed_unit = False
+        
+    elif unit in labels:
+        final_unit_idx = labels.index(unit)
+        fixed_unit = True
+    else:
+         raise ValueError("Invalid unit")
+
+    uvals, inverse = np.unique(x_flat, return_inverse=True)
+    
+    if fixed_unit:
+        indices = np.full(len(uvals), final_unit_idx, dtype=int)
+    else:
+        with np.errstate(divide='ignore', invalid='ignore'):
+             nonzero = (uvals != 0) & np.isfinite(uvals)
+             indices = np.zeros(len(uvals), dtype=int)
+             if np.any(nonzero):
+                 logs = np.log10(np.abs(uvals[nonzero]))
+                 vals = np.floor(logs / 3).astype(int)
+                 limit = len(labels) - 1
+                 indices[nonzero] = np.clip(vals, 0, limit)
+    
+    factors_arr = np.array(factors)
+    labels_arr = np.array(labels)
+    
+    scales = factors_arr[indices]
+    unit_lbls = labels_arr[indices]
+    
+    scaled_vals = uvals * scales
+    
+    fmt_str = f"{{:,.{digits}f}}"
+    formatted_list = [fmt_str.format(v) for v in scaled_vals]
+    formatted_arr = np.array(formatted_list)
+    
+    if thousand_separator != ',':
+        if thousand_separator == '.':
+            formatted_arr = np.char.replace(formatted_arr, ',', 'X')
+            formatted_arr = np.char.replace(formatted_arr, '.', ',')
+            formatted_arr = np.char.replace(formatted_arr, 'X', '.')
+        else:
+            formatted_arr = np.char.replace(formatted_arr, ',', thousand_separator)
+
+    has_unit = unit_lbls != ""
+    if np.any(has_unit):
+        suffixes = np.where(has_unit, np.char.add(" ", unit_lbls), "")
+        formatted_arr = np.char.add(formatted_arr, suffixes)
+    
+    formatted_uvals = formatted_arr
+
+    if prefix or suffix:
+        formatted_uvals = sandwich(formatted_uvals, prefix, suffix)
+        
+    return formatted_uvals[inverse].reshape(original_shape)
+
+
+@unique_optimization
+def npercent(percent, is_decimal=True, digits=1, plus_sign=True, factor_out=False, basis_points_out=False):
+    """
+    percent: input numbers
+    """
+    check_singleton(is_decimal, 'is_decimal', bool)
+    check_singleton(plus_sign, 'plus_sign', bool)
+    
+    x = np.asanyarray(percent, dtype=float)
+    if is_decimal:
+        x = x * 100
+        
+    fmt_str = f"{{:.{digits}f}}"
+    s_list = [fmt_str.format(v) for v in x]
+    s_arr = np.array(s_list, dtype=object)
+    
+    if plus_sign:
+        mask_pos = x > 0
+        s_arr[mask_pos] = np.char.add("+", s_arr[mask_pos])
+        
+    s_arr = np.char.add(s_arr, "%")
+    
+    if factor_out or basis_points_out:
+        extras_arr = np.array([""] * len(x), dtype=object)
+        
+        if factor_out:
+            gtemp = x / 100.0
+            gtemp_abs = np.abs(gtemp)
+            
+            g_fmt = [f"{v:.1f}" for v in gtemp_abs]
+            g_fmt_arr = np.array(g_fmt)
+            
+            growth_lbl = np.char.add(" (", np.char.add(g_fmt_arr, "x Growth)"))
+            drop_lbl = np.char.add(" (", np.char.add(g_fmt_arr, "x Drop)"))
+            
+            small_lbl = np.where(gtemp > 0, " (Growth)", " (Drop)")
+            small_lbl = np.where(gtemp == 0, " (Flat)", small_lbl)
+            
+            f_lbl = np.where(gtemp <= -1, drop_lbl, small_lbl)
+            f_lbl = np.where(gtemp >= 1, growth_lbl, f_lbl)
+            
+            extras_arr = np.char.add(extras_arr, f_lbl)
+            
+        if basis_points_out:
+            bps = x * 100.0
+            
+            bps_list = [f"{b:+.0f}" for b in bps]
+            bps_arr = np.array(bps_list)
+            bps_lbl = np.char.add(" (", np.char.add(bps_arr, " bps)"))
+            
+            extras_arr = np.char.add(extras_arr, bps_lbl)
+            
+        s_arr = np.char.add(s_arr, extras_arr)
+        
+    return s_arr

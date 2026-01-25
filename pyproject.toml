@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyneatR"
+version = "0.1.0"
+description = "Neat formatting for numbers, dates, and strings using numpy."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Shivaprakash Suresh", email = "dswithai@gmail.com" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+urls = { "Homepage" = "https://github.com/yourusername/pyneatR" }
+
+dependencies = [
+    "numpy>=1.21.0"
+    # No pandas or polars dependency here, logic is pure numpy.
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pandas", 
+    "polars"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
