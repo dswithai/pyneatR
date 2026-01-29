@@ -1,6 +1,6 @@
 import numpy as np
 import warnings
-from .utils import check_singleton, sandwich, unique_optimization
+from .utils import _check_singleton, _sandwich, _unique_optimization
 from typing import Union, Any, Optional, Dict
 
 def _nround(x: float, digits: int = 1) -> str:
@@ -38,7 +38,7 @@ def _format_single_number(n: float, digits: int, unit_label: str, thousand_separ
         
     return s
 
-@unique_optimization
+@_unique_optimization
 def nnumber(number: Union[np.ndarray, list, float, int], digits: int = 1, unit: str = 'custom', 
             unit_labels: Dict[str, str] = {'thousand': 'K', 'million': 'Mn', 'billion': 'Bn', 'trillion': 'Tn'},
             prefix: str = '', suffix: str = '', thousand_separator: str = ',') -> Union[np.ndarray, str]:
@@ -70,10 +70,10 @@ def nnumber(number: Union[np.ndarray, list, float, int], digits: int = 1, unit: 
     numpy.ndarray or str
         Formatted number strings.
     """
-    check_singleton(digits, 'digits', int)
-    check_singleton(unit, 'unit', str)
-    check_singleton(prefix, 'prefix', str)
-    check_singleton(suffix, 'suffix', str)
+    _check_singleton(digits, 'digits', int)
+    _check_singleton(unit, 'unit', str)
+    _check_singleton(prefix, 'prefix', str)
+    _check_singleton(suffix, 'suffix', str)
     
     labels = ['', 
               unit_labels.get('thousand', 'K'),
@@ -158,12 +158,12 @@ def nnumber(number: Union[np.ndarray, list, float, int], digits: int = 1, unit: 
     formatted_uvals = formatted_arr
 
     if prefix or suffix:
-        formatted_uvals = sandwich(formatted_uvals, prefix, suffix)
+        formatted_uvals = _sandwich(formatted_uvals, prefix, suffix)
         
     return formatted_uvals[inverse].reshape(original_shape)
 
 
-@unique_optimization
+@_unique_optimization
 def npercent(percent: Union[np.ndarray, list, float, int], is_decimal: bool = True, digits: int = 1, 
              plus_sign: bool = True, factor_out: bool = False, basis_points_out: bool = False) -> Union[np.ndarray, str]:
     """
@@ -190,8 +190,8 @@ def npercent(percent: Union[np.ndarray, list, float, int], is_decimal: bool = Tr
     numpy.ndarray or str
         Formatted percentage strings.
     """
-    check_singleton(is_decimal, 'is_decimal', bool)
-    check_singleton(plus_sign, 'plus_sign', bool)
+    _check_singleton(is_decimal, 'is_decimal', bool)
+    _check_singleton(plus_sign, 'plus_sign', bool)
     
     x = np.asanyarray(percent, dtype=float)
     if is_decimal:

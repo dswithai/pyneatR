@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Any, Optional, Type, Union, Callable
 
-def to_numpy(x: Any) -> np.ndarray:
+def _to_numpy(x: Any) -> np.ndarray:
     """
     Convert input to a numpy array.
     
@@ -17,7 +17,7 @@ def to_numpy(x: Any) -> np.ndarray:
     """
     return np.asanyarray(x)
 
-def check_singleton(x: Any, var_name: str, type_check: Optional[Type] = None) -> None:
+def _check_singleton(x: Any, var_name: str, type_check: Optional[Type] = None) -> None:
     """
     Check if x is a singleton and optionally of a specific type.
     
@@ -52,7 +52,7 @@ def check_singleton(x: Any, var_name: str, type_check: Optional[Type] = None) ->
                 return
             raise TypeError(f"`{var_name}` must be of type {type_check.__name__}.")
 
-def sandwich(x: np.ndarray, prefix: str = "", suffix: str = "") -> np.ndarray:
+def _sandwich(x: np.ndarray, prefix: str = "", suffix: str = "") -> np.ndarray:
     """
     Add prefix and suffix to strings in x.
     
@@ -77,7 +77,7 @@ def sandwich(x: np.ndarray, prefix: str = "", suffix: str = "") -> np.ndarray:
         
     return x
 
-def unique_optimization(func: Callable) -> Callable:
+def _unique_optimization(func: Callable) -> Callable:
     """
     Decorator to apply the unique value optimization pattern.
     
@@ -95,7 +95,7 @@ def unique_optimization(func: Callable) -> Callable:
         Optimized function.
     """
     def wrapper(x, **kwargs):
-        x_arr = to_numpy(x)
+        x_arr = _to_numpy(x)
         original_shape = x_arr.shape
         x_flat = x_arr.ravel()
         

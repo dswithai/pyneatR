@@ -1,6 +1,6 @@
 import numpy as np
 import datetime
-from .utils import check_singleton, unique_optimization
+from .utils import _check_singleton, _unique_optimization
 from typing import Union, Any, Optional
 
 def _get_weekday_name_vec(dt64: np.ndarray) -> np.ndarray:
@@ -22,7 +22,7 @@ def _get_weekday_name_vec(dt64: np.ndarray) -> np.ndarray:
     labels = np.array(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
     return labels[idx]
 
-@unique_optimization
+@_unique_optimization
 def nday(date: Union[np.ndarray, list, datetime.date], reference_alias: bool = False) -> Union[np.ndarray, str]:
     """
     Format dates as day names, optionally with relative alias (Today, Yesterday, etc).
@@ -39,7 +39,7 @@ def nday(date: Union[np.ndarray, list, datetime.date], reference_alias: bool = F
     numpy.ndarray or str
         Formatted day names or strings.
     """
-    check_singleton(reference_alias, 'reference_alias', bool)
+    _check_singleton(reference_alias, 'reference_alias', bool)
     
     if np.size(date) == 0:
         return np.array([], dtype=object)
@@ -84,7 +84,7 @@ def nday(date: Union[np.ndarray, list, datetime.date], reference_alias: bool = F
     result[mask] = day_str
     return result
 
-@unique_optimization
+@_unique_optimization
 def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = True, is_month: bool = False) -> Union[np.ndarray, str]:
     """
     Format dates into a neat string representation.
@@ -103,8 +103,8 @@ def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = 
     numpy.ndarray or str
         Formatted date strings.
     """  
-    check_singleton(display_weekday, 'display_weekday', bool)
-    check_singleton(is_month, 'is_month', bool)
+    _check_singleton(display_weekday, 'display_weekday', bool)
+    _check_singleton(is_month, 'is_month', bool)
     
     if np.size(date) == 0:
         return np.array([], dtype=object)
@@ -165,7 +165,7 @@ def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = 
     result[mask] = s
     return result
 
-@unique_optimization
+@_unique_optimization
 def ntimestamp(timestamp: Union[np.ndarray, list, datetime.datetime], 
                display_weekday: bool = True, include_date: bool = True,
                include_hours: bool = True, include_minutes: bool = True, include_seconds: bool = True,
