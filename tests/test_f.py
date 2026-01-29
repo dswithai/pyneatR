@@ -62,6 +62,14 @@ def test_f_vectorized():
     assert res_d[0] == "Jan 01, 2026"
     assert res_d[1] == "Jan 02, 2026"
 
+def test_f_inference_mixed():
+    # Mixed numeric/None should infer 'number'
+    x = [1000, None, 2000]
+    res = f(x)
+    assert res[0] == "1.0 K"
+    assert res[1] == "nan"
+    assert res[2] == "2.0 K"
+
 def test_f_invalid_type():
     with pytest.raises(ValueError):
         f(10, format_type='invalid')
