@@ -74,7 +74,7 @@ def nday(date: Union[np.ndarray, list, datetime.date], show_relative_day: bool =
         diff = (today_day - d_day) / np.timedelta64(1, 'D')
         diff = diff.astype(int)
         
-        alias = np.full(len(diff), "", dtype=object)
+        alias = np.full(len(diff), "", dtype='<U20')
         
         alias[(diff >= 2) & (diff <= 8)] = "Last "
         alias[diff == 1] = "Yesterday, "

@@ -175,7 +175,9 @@ def npercent(percent: Union[np.ndarray, list, float, int], is_ratio: bool = True
         
     fmt_str = f"{{:.{digits}f}}"
     s_list = [fmt_str.format(v) for v in x]
-    s_arr = np.array(s_list, dtype=object)
+    fmt_str = f"{{:.{digits}f}}"
+    s_list = [fmt_str.format(v) for v in x]
+    s_arr = np.array(s_list)
     
     if show_plus_sign:
         s_arr = np.where(x > 0, np.char.add("+", s_arr), s_arr)
@@ -209,6 +211,8 @@ def npercent(percent: Union[np.ndarray, list, float, int], is_ratio: bool = True
             bps_list = [f"{b:+.0f}" if b != 0 else "0" for b in bps]
             bps_arr = np.array(bps_list)
             bps_lbl = np.char.add(" (", np.char.add(bps_arr, " bps)"))
+            
+            extras_arr = np.char.add(extras_arr, bps_lbl)
             
             extras_arr = np.char.add(extras_arr, bps_lbl)
             

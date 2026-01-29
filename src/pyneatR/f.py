@@ -139,7 +139,8 @@ def f(x: Any, format_type: Optional[str] = None, **kwargs) -> Union[np.ndarray, 
         bps_full = np.char.add(bps_fmt_clean, " basis points")
         
         # Combine: +900% (9x growth, 90K basis points)
-        comp = np.char.add(main_pct, np.char.add(" (", np.char.add(growth_full, np.char.add(", ", np.char.add(bps_full, ")")))))
+        rhs = np.char.add(" (", np.char.add(growth_full, np.char.add(", ", np.char.add(bps_full, ")"))))
+        comp = np.char.add(main_pct, rhs)
         
         if np.isscalar(x) and not isinstance(x, (np.ndarray, list)):
              return comp[0]
