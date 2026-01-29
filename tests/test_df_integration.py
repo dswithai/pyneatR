@@ -14,7 +14,7 @@ def test_pandas_series():
     
     # Dates
     d = pd.to_datetime(["2023-01-01", "2023-01-02"])
-    res_d = ndate(d, display_weekday=False)
+    res_d = ndate(d, show_weekday=False)
     assert res_d[0] == "Jan 01, 2023"
 
 def test_pandas_dataframe_column():
@@ -99,7 +99,7 @@ def test_comprehensive_dataframe():
     assert "1.0 Mn" in res_rev[15]
     
     # npercent
-    res_kp = npercent(df_pd["conversion_rate"], is_decimal=True)
+    res_kp = npercent(df_pd["conversion_rate"], is_ratio=True)
     assert "+22.0%" in res_kp[0]
     
     # ndate

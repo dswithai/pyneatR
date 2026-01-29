@@ -5,18 +5,18 @@ from pyneatR import ndate, ntimestamp, nday
 
 def test_ndate():
     d = np.array(['2023-01-01', '2023-01-02'], dtype='datetime64[D]')
-    res = ndate(d, display_weekday=False)
+    res = ndate(d, show_weekday=False)
     assert res[0] == "Jan 01, 2023"
 
 def test_ndate_weekday():
     d = np.array(['2023-01-01'], dtype='datetime64[D]') # Sunday
-    res = ndate(d, display_weekday=True)
+    res = ndate(d, show_weekday=True)
     assert "Sun" in res[0]
 
 def test_ntimestamp():
     # 2023-01-01 12:30:45
     ts = np.array(['2023-01-01T12:30:45'], dtype='datetime64[s]')
-    res = ntimestamp(ts, include_timezone=False)
+    res = ntimestamp(ts, show_timezone=False)
     # Expected: Jan 01, 2023 12H 30M 45S PM (Sun)
     # Note: 12:30:45 -> 12H 30M 45S PM
     result = res[0]
@@ -30,17 +30,17 @@ def test_nday_alias():
     # Helper to control 'today' reference is hard because logic uses np.datetime64('today')
     # So we test non-relative first.
     d = np.array(['2023-01-01'], dtype='datetime64[D]')
-    res = nday(d, reference_alias=False)
+    res = nday(d, show_relative_day=False)
     assert res[0] == "Sun"
     
     # Relative alias test - risky if 'today' changes, but relative logic:
     # If we pass today
     today = np.datetime64('today')
-    res_today = nday([today], reference_alias=True)
+    res_today = nday([today], show_relative_day=True)
     assert "Today" in res_today[0]
     
     yesterday = today - np.timedelta64(1, 'D')
-    res_yest = nday([yesterday], reference_alias=True)
+    res_yest = nday([yesterday], show_relative_day=True)
     assert "Yesterday" in res_yest[0]
 
 def test_ndate_scalars():
@@ -58,15 +58,15 @@ def test_ndate_scalars():
 def test_ndate_formats():
     d = ["2023-05-15"]
     
-    # is_month=True -> May'23
-    res_mon = ndate(d, is_month=True)
+    # show_month_year=True -> May'23
+    res_mon = ndate(d, show_month_year=True)
     assert res_mon[0] == "May'23"
     
-    # display_weekday=True (default) vs False
-    res_wd = ndate(d, display_weekday=True)
+    # show_weekday=True (default) vs False
+    res_wd = ndate(d, show_weekday=True)
     assert "(Mon)" in res_wd[0]
     
-    res_no_wd = ndate(d, display_weekday=False)
+    res_no_wd = ndate(d, show_weekday=False)
     assert "(Mon)" not in res_no_wd[0]
 
 def test_nday_scalars():
@@ -79,31 +79,31 @@ def test_nday_future():
     
     # Tomorrow
     tmrw = today + np.timedelta64(1, 'D')
-    res_tmrw = nday(tmrw, reference_alias=True)
+    res_tmrw = nday(tmrw, show_relative_day=True)
     assert "Tomorrow" in res_tmrw
     
     # Coming (2-8 days)
     coming = today + np.timedelta64(5, 'D')
-    res_coming = nday(coming, reference_alias=True)
+    res_coming = nday(coming, show_relative_day=True)
     assert "Coming" in res_coming
 
 def test_ntimestamp_components():
     ts = datetime.datetime(2023, 1, 1, 14, 30, 5) # 2:30:05 PM
     
     # Toggle off date
-    res_no_date = ntimestamp(ts, include_date=False, display_weekday=False)
+    res_no_date = ntimestamp(ts, show_date=False, show_weekday=False)
     # Expected: 02H 30M 05S PM
     assert "Jan" not in res_no_date
     assert "02H" in res_no_date
     assert "PM" in res_no_date
     
     # Toggle off seconds
-    res_no_secs = ntimestamp(ts, include_seconds=False, display_weekday=False)
+    res_no_secs = ntimestamp(ts, show_seconds=False, show_weekday=False)
     assert "05S" not in res_no_secs
     assert "30M" in res_no_secs
     
     # Toggle off hours/mins (just date?)
-    res_date_only = ntimestamp(ts, include_hours=False, include_minutes=False, include_seconds=False, display_weekday=False)
+    res_date_only = ntimestamp(ts, show_hours=False, show_minutes=False, show_seconds=False, show_weekday=False)
     # "Jan 01, 2023  PM" -> wait, PM might still be there because logic appends it at end unconditionally?
     # Let's check implementation:
     # ampm_arr is appended last. So it will be "Jan 01, 2023  PM" or similar.

@@ -41,13 +41,13 @@ def test_nstring_cleaning():
     assert res[0] == "Hello World 123"
     
     # Whitelist
-    res_wl = nstring([s], remove_specials=True, whitelist_specials="!")
+    res_wl = nstring([s], remove_specials=True, keep_chars="!")
     # @ removed, ! kept
     assert res_wl[0] == "Hello World! 123"
     
     # En only (remove non-ascii)
     s_uni = "Hello unicode \u00E9" # é
-    res_en = nstring([s_uni], en_only=True)
+    res_en = nstring([s_uni], ascii_only=True)
     assert res_en[0] == "Hello unicode" # é removed or replaced? Regex [^\x20-\x7E] -> removed.
 
 def test_nstring_scalars():

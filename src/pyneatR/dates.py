@@ -23,7 +23,7 @@ def _get_weekday_name_vec(dt64: np.ndarray) -> np.ndarray:
     return labels[idx]
 
 @_unique_optimization
-def nday(date: Union[np.ndarray, list, datetime.date], reference_alias: bool = False) -> Union[np.ndarray, str]:
+def nday(date: Union[np.ndarray, list, datetime.date], show_relative_day: bool = False) -> Union[np.ndarray, str]:
     """
     Format dates as day names, optionally with relative alias (Today, Yesterday, etc).
 
@@ -31,7 +31,7 @@ def nday(date: Union[np.ndarray, list, datetime.date], reference_alias: bool = F
     ----------
     date : array-like
         Input date(s).
-    reference_alias : bool, default False
+    show_relative_day : bool, default False
         If True, adds context like 'Today', 'Yesterday', 'Coming', 'Last'.
 
     Returns
@@ -39,7 +39,7 @@ def nday(date: Union[np.ndarray, list, datetime.date], reference_alias: bool = F
     numpy.ndarray or str
         Formatted day names or strings.
     """
-    _check_singleton(reference_alias, 'reference_alias', bool)
+    _check_singleton(show_relative_day, 'show_relative_day', bool)
     
     if np.size(date) == 0:
         return np.array([], dtype=object)
@@ -52,7 +52,7 @@ def nday(date: Union[np.ndarray, list, datetime.date], reference_alias: bool = F
 
     if not isinstance(date, np.ndarray):
          date = np.asanyarray(date)
-
+         
     if not np.issubdtype(date.dtype, np.datetime64):
          return np.full(date.shape, "NaT", dtype=object)
 
@@ -66,7 +66,7 @@ def nday(date: Union[np.ndarray, list, datetime.date], reference_alias: bool = F
     
     day_str = _get_weekday_name_vec(valid_dates)
     
-    if reference_alias:
+    if show_relative_day:
         today = np.datetime64('today')
         d_day = valid_dates.astype('datetime64[D]')
         today_day = today.astype('datetime64[D]')
@@ -88,7 +88,7 @@ def nday(date: Union[np.ndarray, list, datetime.date], reference_alias: bool = F
     return result
 
 @_unique_optimization
-def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = True, is_month: bool = False) -> Union[np.ndarray, str]:
+def ndate(date: Union[np.ndarray, list, datetime.date], show_weekday: bool = True, show_month_year: bool = False) -> Union[np.ndarray, str]:
     """
     Format dates into a neat string representation.
 
@@ -96,9 +96,9 @@ def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = 
     ----------
     date : array-like
         Input date(s).
-    display_weekday : bool, default True
+    show_weekday : bool, default True
         If True, appending weekday name e.g. (Mon).
-    is_month : bool, default False
+    show_month_year : bool, default False
         If True, formats as month abbreviation and year (Jan'23).
 
     Returns
@@ -106,8 +106,8 @@ def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = 
     numpy.ndarray or str
         Formatted date strings.
     """  
-    _check_singleton(display_weekday, 'display_weekday', bool)
-    _check_singleton(is_month, 'is_month', bool)
+    _check_singleton(show_weekday, 'show_weekday', bool)
+    _check_singleton(show_month_year, 'show_month_year', bool)
     
     if np.size(date) == 0:
         return np.array([], dtype=object)
@@ -126,9 +126,6 @@ def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = 
         # Conversion failed, treat all as NaT/Invalid
         return np.full(date.shape, "NaT", dtype=object)
 
-    if not np.issubdtype(date.dtype, np.datetime64):
-         return np.full(date.shape, "NaT", dtype=object)
-
     mask = ~np.isnat(date)
     result = np.full(date.shape, "NaT", dtype=object)
     
@@ -139,7 +136,7 @@ def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = 
     
     iso = np.datetime_as_string(valid_dates, unit='D')
     
-    if is_month:
+    if show_month_year:
         months_full = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         months_arr = np.array(months_full)
@@ -167,7 +164,7 @@ def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = 
         p3 = np.char.add(p2, ", ")
         s = np.char.add(p3, yyyy)
         
-        if display_weekday:
+        if show_weekday:
             wd = _get_weekday_name_vec(valid_dates)
             w_part = np.char.add(" (", np.char.add(wd, ")"))
             s = np.char.add(s, w_part)
@@ -177,9 +174,9 @@ def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = 
 
 @_unique_optimization
 def ntimestamp(timestamp: Union[np.ndarray, list, datetime.datetime], 
-               display_weekday: bool = True, include_date: bool = True,
-               include_hours: bool = True, include_minutes: bool = True, include_seconds: bool = True,
-               include_timezone: bool = True) -> Union[np.ndarray, str]:
+               show_weekday: bool = True, show_date: bool = True,
+               show_hours: bool = True, show_minutes: bool = True, show_seconds: bool = True,
+               show_timezone: bool = True) -> Union[np.ndarray, str]:
     """
     Format timestamps into a neat string representation.
 
@@ -187,17 +184,17 @@ def ntimestamp(timestamp: Union[np.ndarray, list, datetime.datetime],
     ----------
     timestamp : array-like
         Input timestamp(s).
-    display_weekday : bool, default True
+    show_weekday : bool, default True
         If True, appending weekday name e.g. (Mon).
-    include_date : bool, default True
+    show_date : bool, default True
         If True, include date part.
-    include_hours : bool, default True
+    show_hours : bool, default True
         If True, include hours (12H format).
-    include_minutes : bool, default True
+    show_minutes : bool, default True
         If True, include minutes.
-    include_seconds : bool, default True
+    show_seconds : bool, default True
         If True, include seconds.
-    include_timezone : bool, default True
+    show_timezone : bool, default True
         Reserved parameter for future timezone support (currently unused).
 
     Returns
@@ -232,7 +229,7 @@ def ntimestamp(timestamp: Union[np.ndarray, list, datetime.datetime],
     
     parts_list = []
     
-    if include_date:
+    if show_date:
         months_full = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         months_arr = np.array(months_full)
@@ -264,16 +261,16 @@ def ntimestamp(timestamp: Union[np.ndarray, list, datetime.datetime],
     hours_labels = np.array([f"{i:02d}" for i in range(13)])
     hh_12_str = hours_labels[hh_12]
     
-    if include_hours:
+    if show_hours:
         parts_list.append(np.char.add(hh_12_str, "H"))
         
-    if include_minutes:
+    if show_minutes:
         parts_list.append(np.char.add(" ", np.char.add(mm_str, "M")))
         
-    if include_seconds:
+    if show_seconds:
         parts_list.append(np.char.add(" ", np.char.add(ss_str, "S")))
         
-    if include_timezone:
+    if show_timezone:
         pass
         
     ampm_arr = np.where(is_pm, " PM", " AM")
@@ -283,7 +280,7 @@ def ntimestamp(timestamp: Union[np.ndarray, list, datetime.datetime],
     for p in parts_list[1:]:
         combined = np.char.add(combined, p)
         
-    if display_weekday:
+    if show_weekday:
         wd = _get_weekday_name_vec(valid_ts)
         w_part = np.char.add(" (", np.char.add(wd, ")"))
         combined = np.char.add(combined, w_part)

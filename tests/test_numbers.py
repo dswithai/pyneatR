@@ -41,21 +41,21 @@ def test_nnumber_separators():
 
 def test_npercent():
     # 22.3%
-    res = npercent([0.223], is_decimal=True, digits=1)
+    res = npercent([0.223], is_ratio=True, digits=1)
     assert res[0] == '+22.3%'
     
-    res2 = npercent([22.3], is_decimal=False, digits=1)
+    res2 = npercent([22.3], is_ratio=False, digits=1)
     assert res2[0] == '+22.3%'
     
     # Growth/Drop
     # -4.01 -> -401% -> 4.0x Drop
     # 2.56 -> 256% -> 2.6x Growth
-    res3 = npercent([-4.01, 2.56], is_decimal=True, factor_out=True)
+    res3 = npercent([-4.01, 2.56], is_ratio=True, show_growth_factor=True)
     assert '4.0x Drop' in res3[0]
     assert '2.6x Growth' in res3[1]
     
     # Basis points
-    res4 = npercent([0.01], is_decimal=True, basis_points_out=True)
+    res4 = npercent([0.01], is_ratio=True, show_bps=True)
     assert '100 bps' in res4[0]
 
 def test_nnumber_values():
@@ -147,25 +147,25 @@ def test_npercent_extended():
     ]
 
     for val, expected_pct, expected_bps in scenarios:
-        res = npercent([val], is_decimal=True, digits=2, basis_points_out=True, plus_sign=True)
+        res = npercent([val], is_ratio=True, digits=2, show_bps=True, show_plus_sign=True)
         assert expected_pct in res[0], f"Failed pct for {val}: got {res[0]}"
         assert expected_bps in res[0], f"Failed bps for {val}: got {res[0]}"
 
     # Test plus_sign
-    res_no_sign = npercent([0.05], is_decimal=True, plus_sign=False, digits=2)
+    res_no_sign = npercent([0.05], is_ratio=True, show_plus_sign=False, digits=2)
     assert res_no_sign[0] == "5.00%" 
 
-    res_sign = npercent([0.05], is_decimal=True, plus_sign=True, digits=2)
+    res_sign = npercent([0.05], is_ratio=True, show_plus_sign=True, digits=2)
     assert res_sign[0] == "+5.00%"
 
     # Test factor_out
-    res_factor = npercent([1.0], is_decimal=True, factor_out=True)
+    res_factor = npercent([1.0], is_ratio=True, show_growth_factor=True)
     assert "1.0x Growth" in res_factor[0]
 
-    res_drop_small = npercent([-0.5], is_decimal=True, factor_out=True)
+    res_drop_small = npercent([-0.5], is_ratio=True, show_growth_factor=True)
     assert "(Drop)" in res_drop_small[0]
 
-def test_npercent_factor_out_extended():
+def test_npercent_growth_factor_extended():
     # Value (decimal), Expected Substring
     scenarios = [
         (-1000, "(1000.0x Drop)"),
@@ -188,5 +188,5 @@ def test_npercent_factor_out_extended():
     ]
     
     for val, expected in scenarios:
-        res = npercent([val], is_decimal=True, factor_out=True)
+        res = npercent([val], is_ratio=True, show_growth_factor=True)
         assert expected in res[0], f"Failed for {val}: got {res[0]}, expected {expected}"
