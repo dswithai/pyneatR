@@ -32,7 +32,14 @@ def _infer_type(x: Any) -> str:
     if np.issubdtype(x_arr.dtype, np.number):
         return 'number'
         
-    if np.issubdtype(x_arr.dtype, np.character) or np.issubdtype(x_arr.dtype, np.object_):
+    if np.issubdtype(x_arr.dtype, np.object_):
+        # Check if it's mixed numeric
+        try:
+            temp = x_arr.astype(float)
+            if not np.all(np.isnan(temp)):
+                return 'number'
+        except:
+            pass
         return 'string'
         
     return 'string'
@@ -78,13 +85,22 @@ def f(x: Any, format_type: Optional[str] = None, **kwargs) -> Union[np.ndarray, 
         # Target: "Nov 09, 2025 12H 07M 48S PM IST (Sun)"
         if params.get('show_timezone', True):
             if isinstance(res, np.ndarray):
-                # Search for " (" which starts the weekday part
-                parts = np.char.partition(res, " (")
-                res = np.char.add(parts[:, 0], np.char.add(" IST", parts[:, 1] + parts[:, 2]))
+                # We look for a pattern that safely identifies the transition to the weekday abbreviation
+                # Standard is " (Abbreviation)" at the end.
+                def inject_ist(s):
+                    idx = s.rfind(" (")
+                    if idx != -1:
+                        return s[:idx] + " IST" + s[idx:]
+                    return s + " IST"
+                    
+                inject_vec = np.vectorize(inject_ist, otypes=[object])
+                res = inject_vec(res)
             else:
                 idx = res.rfind(" (")
                 if idx != -1:
                     res = res[:idx] + " IST" + res[idx:]
+                else:
+                    res += " IST"
         return res
         
     elif format_type == 'number':
