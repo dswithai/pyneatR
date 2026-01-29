@@ -230,7 +230,7 @@ def npercent(percent: Union[np.ndarray, list, float, int], is_decimal: bool = Tr
         if basis_points_out:
             bps = x * 100.0
             
-            bps_list = [f"{b:+.0f}" for b in bps]
+            bps_list = [f"{b:+.0f}" if b != 0 else "0" for b in bps]
             bps_arr = np.array(bps_list)
             bps_lbl = np.char.add(" (", np.char.add(bps_arr, " bps)"))
             
