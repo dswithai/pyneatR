@@ -211,3 +211,34 @@ To retain only English alphabets and numbers:
 print(nstring(s, case='title', remove_specials=True, ascii_only=True))
 # "All Models Are Wrong Some Are Useful"
 ```
+
+### Smart Formatting with `f`
+
+The `f` function is a "smart" formatter that infers the input type and applies the most appropriate `pyneatR` formatting with standardized defaults.
+
+```python
+from pyneatR import f
+from datetime import date, datetime
+
+# Infers Date
+print(f(date(2026, 1, 1)))
+# "Jan 01, 2026"
+
+# Infers Timestamp (with IST and Weekday)
+print(f(datetime(2025, 11, 9, 12, 7, 48)))
+# "Nov 09, 2025 12H 07M 48S PM IST (Sun)"
+
+# Infers Number (with scaling and separators)
+print(f(1345000000000))
+# "1.3 Tn"
+
+# Infers Percent (with growth factor and bps)
+print(f(9.0, format_type='percent'))
+# "+900.0% (9x growth, 90K basis points)"
+
+# Infers String (Title Case + Cleaning)
+print(f("all Models are Wrong!!!"))
+# "All Models Are Wrong"
+```
+
+You can explicitly set `format_type` if inference isn't what you want: `day`, `date`, `ts`, `number`, `percent`, `string`. All standard parameters can be passed via `**kwargs`.
