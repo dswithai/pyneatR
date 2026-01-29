@@ -1,10 +1,21 @@
 import numpy as np
 import datetime
 from .utils import check_singleton, unique_optimization
+from typing import Union, Any, Optional
 
-def _get_weekday_name_vec(dt64):
+def _get_weekday_name_vec(dt64: np.ndarray) -> np.ndarray:
     """
     Vectorized weekday name extraction.
+
+    Parameters
+    ----------
+    dt64 : numpy.ndarray
+        Array of datetime64 values.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of weekday abbreviations.
     """
     days = dt64.astype('datetime64[D]').astype(int)
     idx = (days + 3) % 7
@@ -12,17 +23,35 @@ def _get_weekday_name_vec(dt64):
     return labels[idx]
 
 @unique_optimization
-def nday(date, reference_alias=False):
+def nday(date: Union[np.ndarray, list, datetime.date], reference_alias: bool = False) -> Union[np.ndarray, str]:
     """
-    Neat alias of the week day.
+    Format dates as day names, optionally with relative alias (Today, Yesterday, etc).
+
+    Parameters
+    ----------
+    date : array-like
+        Input date(s).
+    reference_alias : bool, default False
+        If True, adds context like 'Today', 'Yesterday', 'Coming', 'Last'.
+
+    Returns
+    -------
+    numpy.ndarray or str
+        Formatted day names or strings.
     """
     check_singleton(reference_alias, 'reference_alias', bool)
     
-    if not np.issubdtype(date.dtype, np.datetime64):
+    if np.size(date) == 0:
+        return np.array([], dtype=object)
+    
+    if not np.issubdtype(getattr(date, 'dtype', None), np.datetime64):
          try:
-             date = date.astype('datetime64[D]')
+             date = np.asanyarray(date).astype('datetime64[D]')
          except:
              pass
+
+    if not isinstance(date, np.ndarray):
+         date = np.asanyarray(date)
 
     mask = ~np.isnat(date)
     result = np.full(date.shape, "NaT", dtype=object)
@@ -56,13 +85,40 @@ def nday(date, reference_alias=False):
     return result
 
 @unique_optimization
-def ndate(date, display_weekday=True, is_month=False):
+def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = True, is_month: bool = False) -> Union[np.ndarray, str]:
     """
-    Neat representation of dates (vectorized).
+    Format dates into a neat string representation.
+
+    Parameters
+    ----------
+    date : array-like
+        Input date(s).
+    display_weekday : bool, default True
+        If True, appending weekday name e.g. (Mon).
+    is_month : bool, default False
+        If True, formats as month abbreviation and year (Jan'23).
+
+    Returns
+    -------
+    numpy.ndarray or str
+        Formatted date strings.
     """  
     check_singleton(display_weekday, 'display_weekday', bool)
     check_singleton(is_month, 'is_month', bool)
     
+    if np.size(date) == 0:
+        return np.array([], dtype=object)
+    
+    if not np.issubdtype(getattr(date, 'dtype', None), np.datetime64):
+         try:
+             date = np.asanyarray(date).astype('datetime64[D]')
+         except:
+             # Fallback attempt if astype fails or if it's already object
+             date = np.asanyarray(date)
+
+    if not isinstance(date, np.ndarray):
+        date = np.asanyarray(date)
+        
     mask = ~np.isnat(date)
     result = np.full(date.shape, "NaT", dtype=object)
     
@@ -110,12 +166,47 @@ def ndate(date, display_weekday=True, is_month=False):
     return result
 
 @unique_optimization
-def ntimestamp(timestamp, display_weekday=True, include_date=True,
-               include_hours=True, include_minutes=True, include_seconds=True,
-               include_timezone=True):
+def ntimestamp(timestamp: Union[np.ndarray, list, datetime.datetime], 
+               display_weekday: bool = True, include_date: bool = True,
+               include_hours: bool = True, include_minutes: bool = True, include_seconds: bool = True,
+               include_timezone: bool = True) -> Union[np.ndarray, str]:
     """
-    Neat representation of timestamps (Optimized Vectorized).
+    Format timestamps into a neat string representation.
+
+    Parameters
+    ----------
+    timestamp : array-like
+        Input timestamp(s).
+    display_weekday : bool, default True
+        If True, appending weekday name e.g. (Mon).
+    include_date : bool, default True
+        If True, include date part.
+    include_hours : bool, default True
+        If True, include hours (12H format).
+    include_minutes : bool, default True
+        If True, include minutes.
+    include_seconds : bool, default True
+        If True, include seconds.
+    include_timezone : bool, default True
+        Reserved parameter for future timezone support (currently unused).
+
+    Returns
+    -------
+    numpy.ndarray or str
+        Formatted timestamp strings.
     """
+    if np.size(timestamp) == 0:
+        return np.array([], dtype=object)
+
+    if not isinstance(timestamp, np.ndarray):
+         timestamp = np.asanyarray(timestamp)
+
+    if not np.issubdtype(timestamp.dtype, np.datetime64):
+         try:
+             timestamp = timestamp.astype('datetime64[s]')
+         except:
+             pass
+
     mask = ~np.isnat(timestamp)
     result = np.full(timestamp.shape, "NaT", dtype=object)
     

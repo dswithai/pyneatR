@@ -200,11 +200,12 @@ def ntimestamp(timestamp: Union[np.ndarray, list, datetime.datetime],
 
     if not isinstance(timestamp, np.ndarray):
          timestamp = np.asanyarray(timestamp)
-         if not np.issubdtype(timestamp.dtype, np.datetime64):
-             try:
-                 timestamp = timestamp.astype('datetime64[s]')
-             except:
-                 pass
+
+    if not np.issubdtype(timestamp.dtype, np.datetime64):
+         try:
+             timestamp = timestamp.astype('datetime64[s]')
+         except:
+             pass
 
     mask = ~np.isnat(timestamp)
     result = np.full(timestamp.shape, "NaT", dtype=object)
