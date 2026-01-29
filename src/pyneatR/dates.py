@@ -53,6 +53,9 @@ def nday(date: Union[np.ndarray, list, datetime.date], reference_alias: bool = F
     if not isinstance(date, np.ndarray):
          date = np.asanyarray(date)
 
+    if not np.issubdtype(date.dtype, np.datetime64):
+         return np.full(date.shape, "NaT", dtype=object)
+
     mask = ~np.isnat(date)
     result = np.full(date.shape, "NaT", dtype=object)
     
@@ -119,6 +122,13 @@ def ndate(date: Union[np.ndarray, list, datetime.date], display_weekday: bool = 
     if not isinstance(date, np.ndarray):
         date = np.asanyarray(date)
         
+    if not np.issubdtype(date.dtype, np.datetime64):
+        # Conversion failed, treat all as NaT/Invalid
+        return np.full(date.shape, "NaT", dtype=object)
+
+    if not np.issubdtype(date.dtype, np.datetime64):
+         return np.full(date.shape, "NaT", dtype=object)
+
     mask = ~np.isnat(date)
     result = np.full(date.shape, "NaT", dtype=object)
     
@@ -206,6 +216,9 @@ def ntimestamp(timestamp: Union[np.ndarray, list, datetime.datetime],
              timestamp = timestamp.astype('datetime64[s]')
          except:
              pass
+
+    if not np.issubdtype(timestamp.dtype, np.datetime64):
+         return np.full(timestamp.shape, "NaT", dtype=object)
 
     mask = ~np.isnat(timestamp)
     result = np.full(timestamp.shape, "NaT", dtype=object)
