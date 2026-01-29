@@ -32,27 +32,28 @@ print(ndate(today + timedelta(days=4)))
 # "Nov 13, 2025 (Thu)"
 ```
 
-To just get the date without the day of week, set `display_weekday=False`:
+To just get the date without the day of week, set `show_weekday=False`:
 
 ```python
-print(ndate(today, display_weekday=False))
+print(ndate(today, show_weekday=False))
 # "Nov 09, 2025"
 ```
 
 For monthly data, abbreviating the date to `mmm'yy` is elegant:
 
 ```python
-print(ndate(today, display_weekday=False, is_month=True))
+print(ndate(today, show_weekday=False, show_month_year=True))
 # "Nov'25"
 ```
 
 To see the context of the date with respect to current date (within 1 week), use `nday`.
 
 ```python
-print(nday(today, reference_alias=False))
+print(nday(today, show_relative_day=False))
 # "Sun"
 
-print(nday(today, reference_alias=True))
+```python
+print(nday(today, show_relative_day=True))
 # "Today, Sun"
 ```
 
@@ -74,16 +75,16 @@ print(ntimestamp(now))
 To extract and format only the time:
 
 ```python
-print(ntimestamp(now, display_weekday=False, include_date=False, include_timezone=False))
+print(ntimestamp(now, show_weekday=False, show_date=False, show_timezone=False))
 # "12H 07M 48S PM"
 ```
 
 Components of time can be toggled on or off:
 
 ```python
-print(ntimestamp(now, include_date=False, display_weekday=False, 
-                 include_hours=True, include_minutes=True, include_seconds=False, 
-                 include_timezone=False))
+print(ntimestamp(now, show_date=False, show_weekday=False, 
+                 show_hours=True, show_minutes=True, show_seconds=False, 
+                 show_timezone=False))
 # "12H 07M PM"
 ```
 
@@ -147,17 +148,17 @@ print(nnumber(123456789.123456, digits=2, unit='', thousand_separator=','))
 ```python
 from pyneatR import npercent
 
-print(npercent(22.8, is_decimal=False))
+print(npercent(22.8, is_ratio=False))
 # "+22.8%"
 
-print(npercent(0.228, is_decimal=True))
+print(npercent(0.228, is_ratio=True))
 # "+22.8%"
 ```
 
-By default `is_decimal=True`. The plus sign can be toggled:
+By default `is_ratio=True`. The plus sign can be toggled:
 
 ```python
-print(npercent(0.228, plus_sign=False))
+print(npercent(0.228, show_plus_sign=False))
 # "22.8%"
 ```
 
@@ -168,10 +169,8 @@ tesla_2017 = 20
 tesla_2023 = 200
 g = (tesla_2023 - tesla_2017) / tesla_2017
 
-print(npercent(g, plus_sign=True))
-# "+900.0%"
-
-# factor_out=True is not yet implemented in this version, but check documentation for updates.
+print(npercent(g, show_plus_sign=True, show_growth_factor=True))
+# "+900.0% (9.0x Growth)"
 ```
 
 ### Formatting string
@@ -189,6 +188,6 @@ print(nstring(s, case='title', remove_specials=True))
 To retain only English alphabets and numbers:
 
 ```python
-print(nstring(s, case='title', remove_specials=True, en_only=True))
+print(nstring(s, case='title', remove_specials=True, ascii_only=True))
 # "All Models Are Wrong Some Are Useful"
 ```
