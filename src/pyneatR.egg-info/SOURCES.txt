@@ -3,6 +3,7 @@ README.md
 pyproject.toml
 src/pyneatR/__init__.py
 src/pyneatR/dates.py
+src/pyneatR/f.py
 src/pyneatR/numbers.py
 src/pyneatR/strings.py
 src/pyneatR/utils.py
@@ -14,5 +15,6 @@ src/pyneatR.egg-info/top_level.txt
 tests/test_dates.py
 tests/test_df_integration.py
 tests/test_edge_cases.py
+tests/test_f.py
 tests/test_numbers.py
 tests/test_strings.py

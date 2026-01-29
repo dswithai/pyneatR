@@ -1,6 +1,6 @@
 import numpy as np
 import warnings
-from .utils import check_singleton, sandwich, unique_optimization
+from .utils import _check_singleton, _sandwich, _unique_optimization
 from typing import Union, Any, Optional, Dict
 
 def _nround(x: float, digits: int = 1) -> str:
@@ -9,36 +9,9 @@ def _nround(x: float, digits: int = 1) -> str:
     """
     return f"{x:.{digits}f}"
 
-def _chunk_digits(x, thousand_separator: str = ","):
-    """
-    Add separator to number string. 
-    x is expected to be a number.
-    Returns string.
-    """
-    pass 
 
-def _format_single_number(n: float, digits: int, unit_label: str, thousand_separator: str) -> str:
-    s = f"{n:.{digits}f}"
-    
-    if thousand_separator:
-        parts = s.split('.')
-        integer_part = parts[0]
-        integer_part = f"{int(integer_part):,}"
-        
-        if thousand_separator != ',':
-            integer_part = integer_part.replace(',', thousand_separator)
-            
-        s = integer_part
-        if len(parts) > 1:
-             decimal_mark = "," if thousand_separator == "." else "."
-             s += decimal_mark + parts[1]
-             
-    if s == "0" or s == "0.0" or (s.replace('.','').replace(',','').replace('0','') == ''):
-        pass
-        
-    return s
 
-@unique_optimization
+@_unique_optimization
 def nnumber(number: Union[np.ndarray, list, float, int], digits: int = 1, unit: str = 'custom', 
             unit_labels: Dict[str, str] = {'thousand': 'K', 'million': 'Mn', 'billion': 'Bn', 'trillion': 'Tn'},
             prefix: str = '', suffix: str = '', thousand_separator: str = ',') -> Union[np.ndarray, str]:
@@ -70,10 +43,10 @@ def nnumber(number: Union[np.ndarray, list, float, int], digits: int = 1, unit: 
     numpy.ndarray or str
         Formatted number strings.
     """
-    check_singleton(digits, 'digits', int)
-    check_singleton(unit, 'unit', str)
-    check_singleton(prefix, 'prefix', str)
-    check_singleton(suffix, 'suffix', str)
+    _check_singleton(digits, 'digits', int)
+    _check_singleton(unit, 'unit', str)
+    _check_singleton(prefix, 'prefix', str)
+    _check_singleton(suffix, 'suffix', str)
     
     labels = ['', 
               unit_labels.get('thousand', 'K'),
@@ -158,14 +131,14 @@ def nnumber(number: Union[np.ndarray, list, float, int], digits: int = 1, unit: 
     formatted_uvals = formatted_arr
 
     if prefix or suffix:
-        formatted_uvals = sandwich(formatted_uvals, prefix, suffix)
+        formatted_uvals = _sandwich(formatted_uvals, prefix, suffix)
         
     return formatted_uvals[inverse].reshape(original_shape)
 
 
-@unique_optimization
-def npercent(percent: Union[np.ndarray, list, float, int], is_decimal: bool = True, digits: int = 1, 
-             plus_sign: bool = True, factor_out: bool = False, basis_points_out: bool = False) -> Union[np.ndarray, str]:
+@_unique_optimization
+def npercent(percent: Union[np.ndarray, list, float, int], is_ratio: bool = True, digits: int = 1, 
+             show_plus_sign: bool = True, show_growth_factor: bool = False, show_bps: bool = False) -> Union[np.ndarray, str]:
     """
     Format numbers as percentages.
 
@@ -173,16 +146,16 @@ def npercent(percent: Union[np.ndarray, list, float, int], is_decimal: bool = Tr
     ----------
     percent : array-like
         Input numbers.
-    is_decimal : bool, default True
-        If True, input is treated as decimal (0.1 -> 10%).
+    is_ratio : bool, default True
+        If True, input is treated as ratio (0.1 -> 10%).
         If False, input is treated as whole percentage (10 -> 10%).
     digits : int, default 1
         Number of decimal digits to display.
-    plus_sign : bool, default True
+    show_plus_sign : bool, default True
         If True, prepend '+' to positive values.
-    factor_out : bool, default False
+    show_growth_factor : bool, default False
         If True, add growth factor (e.g. 2x Growth).
-    basis_points_out : bool, default False
+    show_bps : bool, default False
         If True, add basis points label (e.g. 100 bps).
 
     Returns
@@ -190,26 +163,29 @@ def npercent(percent: Union[np.ndarray, list, float, int], is_decimal: bool = Tr
     numpy.ndarray or str
         Formatted percentage strings.
     """
-    check_singleton(is_decimal, 'is_decimal', bool)
-    check_singleton(plus_sign, 'plus_sign', bool)
+    _check_singleton(is_ratio, 'is_ratio', bool)
+    _check_singleton(show_plus_sign, 'show_plus_sign', bool)
     
     x = np.asanyarray(percent, dtype=float)
-    if is_decimal:
+    if is_ratio:
         x = x * 100
+        
+    if len(x) == 0:
+        return np.array([], dtype=object)
         
     fmt_str = f"{{:.{digits}f}}"
     s_list = [fmt_str.format(v) for v in x]
-    s_arr = np.array(s_list)
+    s_arr = np.array(s_list, dtype=object)
     
-    if plus_sign:
+    if show_plus_sign:
         s_arr = np.where(x > 0, np.char.add("+", s_arr), s_arr)
         
     s_arr = np.char.add(s_arr, "%")
     
-    if factor_out or basis_points_out:
+    if show_growth_factor or show_bps:
         extras_arr = np.array([""] * len(x))
         
-        if factor_out:
+        if show_growth_factor:
             gtemp = x / 100.0
             gtemp_abs = np.abs(gtemp)
             
@@ -227,10 +203,10 @@ def npercent(percent: Union[np.ndarray, list, float, int], is_decimal: bool = Tr
             
             extras_arr = np.char.add(extras_arr, f_lbl)
             
-        if basis_points_out:
+        if show_bps:
             bps = x * 100.0
             
-            bps_list = [f"{b:+.0f}" for b in bps]
+            bps_list = [f"{b:+.0f}" if b != 0 else "0" for b in bps]
             bps_arr = np.array(bps_list)
             bps_lbl = np.char.add(" (", np.char.add(bps_arr, " bps)"))
             
