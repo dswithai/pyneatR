@@ -9,34 +9,7 @@ def _nround(x: float, digits: int = 1) -> str:
     """
     return f"{x:.{digits}f}"
 
-def _chunk_digits(x, thousand_separator: str = ","):
-    """
-    Add separator to number string. 
-    x is expected to be a number.
-    Returns string.
-    """
-    pass 
 
-def _format_single_number(n: float, digits: int, unit_label: str, thousand_separator: str) -> str:
-    s = f"{n:.{digits}f}"
-    
-    if thousand_separator:
-        parts = s.split('.')
-        integer_part = parts[0]
-        integer_part = f"{int(integer_part):,}"
-        
-        if thousand_separator != ',':
-            integer_part = integer_part.replace(',', thousand_separator)
-            
-        s = integer_part
-        if len(parts) > 1:
-             decimal_mark = "," if thousand_separator == "." else "."
-             s += decimal_mark + parts[1]
-             
-    if s == "0" or s == "0.0" or (s.replace('.','').replace(',','').replace('0','') == ''):
-        pass
-        
-    return s
 
 @_unique_optimization
 def nnumber(number: Union[np.ndarray, list, float, int], digits: int = 1, unit: str = 'custom', 
