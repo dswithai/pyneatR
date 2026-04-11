@@ -1,5 +1,6 @@
 import numpy as np
-from typing import Any, Optional, Type, Union, Callable
+import functools
+from typing import Any, Optional, Type, Callable
 
 def _to_numpy(x: Any) -> np.ndarray:
     """
@@ -94,6 +95,7 @@ def _unique_optimization(func: Callable) -> Callable:
     Callable
         Optimized function.
     """
+    @functools.wraps(func)
     def wrapper(x, **kwargs):
         x_arr = _to_numpy(x)
         original_shape = x_arr.shape

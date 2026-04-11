@@ -3,6 +3,8 @@ import datetime
 from .dates import ndate, ntimestamp, nday
 from .numbers import nnumber, npercent
 from .strings import nstring
+from .currency import ncurrency
+from .locale import resolve_locale
 from typing import Union, Any, Optional
 
 def _infer_type(x: Any) -> str:
@@ -38,13 +40,14 @@ def _infer_type(x: Any) -> str:
             temp = x_arr.astype(float)
             if not np.all(np.isnan(temp)):
                 return 'number'
-        except:
+        except (ValueError, TypeError):
             pass
         return 'string'
         
     return 'string'
 
-def f(x: Any, format_type: Optional[str] = None, **kwargs) -> Union[np.ndarray, str]:
+def f(x: Any, format_type: Optional[str] = None, locale: "Optional[str]" = None,
+      **kwargs) -> Union[np.ndarray, str]:
     """
     Smart format function that infers type and applies pyneatR formatting.
     
@@ -53,11 +56,17 @@ def f(x: Any, format_type: Optional[str] = None, **kwargs) -> Union[np.ndarray, 
     x : Any
         Input data to format.
     format_type : str, optional
-        Explicit format type: 'day', 'date', 'ts', 'number', 'percent', 'string'.
+        Explicit format type: 'day', 'date', 'ts', 'number', 'percent',
+        'currency', 'string'.
         If None, type is inferred.
+    locale : str, optional
+        Locale name (e.g. "en_IN", "en_US", "de_DE").
+        Overrides the global locale for this call.
     **kwargs : dict
         Additional parameters passed to the underlying formatting functions.
     """
+    locale_obj = resolve_locale(locale)
+    
     if format_type is None:
         format_type = _infer_type(x)
         
@@ -74,40 +83,51 @@ def f(x: Any, format_type: Optional[str] = None, **kwargs) -> Union[np.ndarray, 
         return ndate(x, **params)
         
     elif format_type == 'ts':
-        # Default: Nov 09, 2025 12H 07M 48S PM IST (Sun)
-        # Note: IST is hardcoded as per example request since library doesn't handle TZ yet
+        # Timezone label comes from locale, not hardcoded
+        tz_label = ""
+        if locale_obj is not None:
+            tz_label = locale_obj.timezone_label
+        # Allow explicit override via kwargs
+        tz_label = kwargs.pop('timezone_label', tz_label)
+        
         params = {'show_weekday': True, 'show_timezone': True}
         params.update(kwargs)
         res = ntimestamp(x, **params)
         
-        # Add "IST" before the weekday part if show_timezone is True
-        # Original: "Nov 09, 2025 12H 07M 48S PM (Sun)"
-        # Target: "Nov 09, 2025 12H 07M 48S PM IST (Sun)"
-        if params.get('show_timezone', True):
+        # Add timezone label before the weekday part if available
+        if tz_label and params.get('show_timezone', True):
             if isinstance(res, np.ndarray):
-                # We look for a pattern that safely identifies the transition to the weekday abbreviation
-                # Standard is " (Abbreviation)" at the end.
-                def inject_ist(s):
+                def inject_tz(s):
                     idx = s.rfind(" (")
                     if idx != -1:
-                        return s[:idx] + " IST" + s[idx:]
-                    return s + " IST"
+                        return s[:idx] + " " + tz_label + s[idx:]
+                    return s + " " + tz_label
                     
-                inject_vec = np.vectorize(inject_ist, otypes=[object])
+                inject_vec = np.vectorize(inject_tz, otypes=[object])
                 res = inject_vec(res)
             else:
                 idx = res.rfind(" (")
                 if idx != -1:
-                    res = res[:idx] + " IST" + res[idx:]
+                    res = res[:idx] + " " + tz_label + res[idx:]
                 else:
-                    res += " IST"
+                    res += " " + tz_label
         return res
         
     elif format_type == 'number':
         # Default: 1,345 Bn (K, Mn, Bn, Tn, comma separator)
         params = {'thousand_separator': ',', 'unit': 'custom'}
+        if locale is not None:
+            params['locale'] = locale
         params.update(kwargs)
         return nnumber(x, **params)
+    
+    elif format_type == 'currency':
+        # Currency formatting — opt-in via format_type='currency'
+        params = {}
+        if locale is not None:
+            params['locale'] = locale
+        params.update(kwargs)
+        return ncurrency(x, **params)
         
     elif format_type == 'percent':
         # Default: +900% (9x growth, 90K basis points)
@@ -129,7 +149,7 @@ def f(x: Any, format_type: Optional[str] = None, **kwargs) -> Union[np.ndarray, 
         growth_str_list = [f"{v:.1f}" if v % 1 != 0 else f"{int(v)}" for v in np.atleast_1d(growth_val)]
         growth_labels = np.where(mult >= 0, "x growth", "x drop")
         growth_labels_1d = np.atleast_1d(growth_labels)
-        growth_full = np.array([f"{s}{l}" for s, l in zip(growth_str_list, growth_labels_1d)])
+        growth_full = np.array([f"{s}{lbl}" for s, lbl in zip(growth_str_list, growth_labels_1d)])
         
         # 3. Basis points string (e.g. 90K basis points) - remove space in nnumber output
         bps_val = x_val * 10000 if is_ratio else x_val * 100

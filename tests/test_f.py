@@ -13,12 +13,20 @@ def test_f_inference_date():
     assert f(d_np) == "Jan 01, 2026"
 
 def test_f_inference_ts():
-    # timestamp inference
+    # timestamp inference — no locale set, no timezone label injected
     ts = datetime.datetime(2025, 11, 9, 12, 7, 48)
     res = f(ts)
     assert "Nov 09, 2025" in res
+    assert "12H 07M 48S PM" in res
+    assert "(Sun)" in res
+
+def test_f_inference_ts_with_locale():
+    # With en_IN locale, IST should be injected
+    ts = datetime.datetime(2025, 11, 9, 12, 7, 48)
+    res = f(ts, locale="en_IN")
     assert "12H 07M 48S PM IST" in res
     assert "(Sun)" in res
+
 
 def test_f_inference_number():
     # number inference

@@ -1,7 +1,7 @@
 import numpy as np
 import datetime
 from .utils import _check_singleton, _unique_optimization
-from typing import Union, Any, Optional
+from typing import Union
 
 def _get_weekday_name_vec(dt64: np.ndarray) -> np.ndarray:
     """
@@ -47,7 +47,7 @@ def nday(date: Union[np.ndarray, list, datetime.date], show_relative_day: bool =
     if not np.issubdtype(getattr(date, 'dtype', None), np.datetime64):
          try:
              date = np.asanyarray(date).astype('datetime64[D]')
-         except:
+         except (ValueError, TypeError):
              pass
 
     if not isinstance(date, np.ndarray):
@@ -115,7 +115,7 @@ def ndate(date: Union[np.ndarray, list, datetime.date], show_weekday: bool = Tru
     if not np.issubdtype(getattr(date, 'dtype', None), np.datetime64):
          try:
              date = np.asanyarray(date).astype('datetime64[D]')
-         except:
+         except (ValueError, TypeError):
              # Fallback attempt if astype fails or if it's already object
              date = np.asanyarray(date)
 
@@ -211,7 +211,7 @@ def ntimestamp(timestamp: Union[np.ndarray, list, datetime.datetime],
     if not np.issubdtype(timestamp.dtype, np.datetime64):
          try:
              timestamp = timestamp.astype('datetime64[s]')
-         except:
+         except (ValueError, TypeError):
              pass
 
     if not np.issubdtype(timestamp.dtype, np.datetime64):

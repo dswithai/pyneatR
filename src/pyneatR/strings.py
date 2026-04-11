@@ -3,23 +3,6 @@ import re
 from .utils import _check_singleton, _unique_optimization
 from typing import Union, Optional
 
-def _clean_text_single(text: str, keep_chars: str = "") -> str:
-    if not text:
-        return ""
-    escaped_whitelist = re.escape(keep_chars)
-    pattern = f"[^a-zA-Z0-9\\s{escaped_whitelist}]"
-    return re.sub(pattern, "", text)
-
-def _clean_space_single(text: str) -> str:
-    if not text:
-        return ""
-    return re.sub(r"\s+", " ", text).strip()
-
-def _strip_non_english_single(text: str) -> str:
-    if not text:
-        return ""
-    return re.sub(r"[^\x20-\x7E]", "", text)
-
 def _convert_case_single(text: str, case: str) -> str:
     if case == 'lower':
         return text.lower()

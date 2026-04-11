@@ -2,8 +2,11 @@ LICENSE
 README.md
 pyproject.toml
 src/pyneatR/__init__.py
+src/pyneatR/currency.py
 src/pyneatR/dates.py
 src/pyneatR/f.py
+src/pyneatR/hooks.py
+src/pyneatR/locale.py
 src/pyneatR/numbers.py
 src/pyneatR/strings.py
 src/pyneatR/utils.py
@@ -12,9 +15,12 @@ src/pyneatR.egg-info/SOURCES.txt
 src/pyneatR.egg-info/dependency_links.txt
 src/pyneatR.egg-info/requires.txt
 src/pyneatR.egg-info/top_level.txt
+tests/test_currency.py
 tests/test_dates.py
 tests/test_df_integration.py
 tests/test_edge_cases.py
 tests/test_f.py
+tests/test_hooks.py
+tests/test_locale.py
 tests/test_numbers.py
 tests/test_strings.py
